@@ -1,31 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.kakaoalertresponder">
 
-    <!-- ✅ uses-permission 은 application 바깥, manifest 안에 있어야 함 -->
+    <!-- ✅ 필수 권한 -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <uses-permission android:name="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.VIBRATE" />
 
     <application
         android:allowBackup="true"
         android:label="@string/app_name"
-        android:supportsRtl="true"
-        android:theme="@style/Theme.KakaoAlertResponder"
         android:icon="@mipmap/ic_launcher"
-        android:roundIcon="@mipmap/ic_launcher_round">
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.KakaoAlertResponder">
 
-        <!-- ✅ 서비스 -->
+        <!-- ✅ 알림 리스너 서비스 -->
         <service
             android:name=".KakaoNotificationListener"
-            android:label="Kakao Notification Listener"
+            android:label="Kakao Alert Listener"
             android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
-            android:exported="true">
+            android:exported="true">   <!-- 🔹 바로 이 속성이 핵심 -->
             <intent-filter>
                 <action android:name="android.service.notification.NotificationListenerService" />
             </intent-filter>
         </service>
 
-        <!-- ✅ 리시버들 -->
+        <!-- ✅ 부팅 후 알림 재등록용 리시버 -->
         <receiver
             android:name=".AlertReceiver"
             android:exported="false" />
@@ -35,7 +36,8 @@
             android:exported="false" />
 
         <!-- ✅ 메인 액티비티 -->
-        <activity android:name=".MainActivity"
+        <activity
+            android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

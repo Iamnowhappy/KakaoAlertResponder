@@ -1,53 +1,56 @@
 package com.example.kakaoalertresponder
 
-import android.content.Context
-import android.content.Intent
 import android.os.Bundle
-import android.provider.Settings
-import android.widget.*
+import android.widget.EditText
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var etRoom: EditText
-    private lateinit var etSender: EditText
-    private val prefsName = "alert_prefs"
+    private val prefName = "kakao_prefs"
+    private val keyChatRooms = "chat_rooms" // 여러 방을 콤마로 직렬화하여 저장
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val prefs = getSharedPreferences(prefsName, Context.MODE_PRIVATE)
-        etRoom = findViewById(R.id.etRoom)
-        etSender = findViewById(R.id.etSender)
+        val etRoom = findViewById<EditText>(R.id.etRoom) // 기존 방 이름 입력 EditText
+        val prefs = getSharedPreferences(prefName, MODE_PRIVATE)
 
-        // 기존 저장값 불러오기
-        etRoom.setText(prefs.getString("target_room", "프로젝트방"))
-        etSender.setText(prefs.getString("target_sender", ""))
+        // 저장된 값 표시(힌트/초기값)
+        val saved = prefs.getString(keyChatRooms, "") ?: ""
+        if (saved.isNotBlank()) etRoom.setText(saved)
 
-        findViewById<Button>(R.id.btnSaveSetting).setOnClickListener {
-            val room = etRoom.text.toString().trim()
-            val sender = etSender.text.toString().trim()
-            if (room.isEmpty()) {
-                Toast.makeText(this, "방 이름은 반드시 입력해야 합니다.", Toast.LENGTH_SHORT).show()
+        // 기존 “설정 저장” 버튼 클릭 리스너 안에 아래 로직을 사용해줘
+        findViewById<android.view.View>(R.id.btnSave)?.setOnClickListener {
+            val rawInput = etRoom.text?.toString() ?: ""
+            val normalized = normalizeRoomsInput(rawInput)
+
+            if (normalized.isBlank()) {
+                Toast.makeText(this, "감시할 방 이름을 한 개 이상 입력하세요.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            prefs.edit()
-                .putString("target_room", room)
-                .putString("target_sender", sender)
-                .apply()
-            Toast.makeText(this, "설정이 저장되었습니다.", Toast.LENGTH_SHORT).show()
-        }
 
-        // 기존 버튼들
-        findViewById<Button>(R.id.btnOpenNLSettings).setOnClickListener {
-            startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+            prefs.edit().putString(keyChatRooms, normalized).apply()
+            Toast.makeText(this, "감시 방 목록 저장 완료:\n$normalized", Toast.LENGTH_LONG).show()
         }
-        findViewById<Button>(R.id.btnOpenExactAlarm).setOnClickListener {
-            startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM))
-        }
-        findViewById<Button>(R.id.btnIgnoreBattery).setOnClickListener {
-            startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
-        }
+    }
+
+    /**
+     * 여러 구분자(쉼표, 세미콜론, 줄바꿈)를 허용하고
+     * 공백/중복을 제거하여 "A, B, C" 형태로 직렬화
+     */
+    private fun normalizeRoomsInput(input: String): String {
+        // 쉼표/세미콜론/줄바꿈/탭을 전부 구분자로 인식
+        val tokens = input
+            .split(',', ';', '\n', '\r', '\t')
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+
+        // 대소문자 구분 없이 중복 제거 + 보기 좋게 정렬(선택)
+        val unique = LinkedHashSet<String>()
+        tokens.forEach { unique.add(it) }
+
+        return unique.joinToString(separator = ", ")
     }
 }
